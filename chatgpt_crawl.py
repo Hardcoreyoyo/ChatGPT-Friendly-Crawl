@@ -39,9 +39,9 @@ async def crawl(start_url, depth, max_pages):
 
             hrefs = await page.evaluate('''() => Array.from(document.querySelectorAll('a'), a => a.href)''')
             for href in hrefs:
-                if href and await is_within_path(start_url, href, depth - current_depth):
+                if href and not '#' in href:
                     url = urljoin(current_url, href)
-                    if url not in visited:
+                    if url not in visited and await is_within_path(start_url, href, depth - current_depth):
                         if current_depth < depth:
                             queue.append((url, current_depth + 1))
                         if url not in urls_collected:
@@ -50,7 +50,6 @@ async def crawl(start_url, depth, max_pages):
                             if len(urls_collected) >= max_pages:
                                 print("Reached maximum page limit")
                                 break
-
     finally:
         await browser.close()
         print("Driver closed.")
