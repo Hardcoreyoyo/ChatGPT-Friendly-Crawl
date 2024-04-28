@@ -40,7 +40,4 @@ Using the `https://r.jina.ai` API optimizes the retrieval process, enhancing sca
 
 ## Wrap-up
 
-This crawler combines modern async patterns with a robust API to streamline data collection, making it an efficient tool for scalable web scraping.
-```
-
-This trimmed version keeps it professional with less fluff and more industry-specific terminology, emphasizing efficiency and scalability.
+This "ChatGPT Friendly Crawl" combines modern async patterns with a robust API to streamline data collection, making it an efficient tool for scalable web scraping.
