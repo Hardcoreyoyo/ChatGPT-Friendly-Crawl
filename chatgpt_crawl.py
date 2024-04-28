@@ -23,7 +23,7 @@ async def crawl(start_url, depth, max_pages):
 
     visited = set()
     queue = deque([(start_url, 0)])
-    urls_collected = []
+    urls_collected = [start_url]  # 直接將起始網址加入收集的 URLs
 
     try:
         while queue and len(urls_collected) < max_pages:

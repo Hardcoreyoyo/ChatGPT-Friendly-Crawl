@@ -3,9 +3,18 @@
 
 ### prerequisite
 
-> Be sure you have python >= 11 installed.
+> Ensure Python 11+ is installed. Dependencies can be installed via:  
 
-### execute
+```bash
+pip install aiohttp pyppeteer
+```
+
+### Usage
+
+Before running the crawler, set these environment variables:
+- `CHATGPT_CRAWL_VAR_START_URL`: Starting URL for the crawl.
+- `CHATGPT_CRAWL_VAR_DEPTH`: Maximum crawl depth.
+- `CHATGPT_CRAWL_VAR_MAX_PAGES`: Maximum number of pages to fetch.
 
 ```bash
 
@@ -25,4 +34,13 @@ python ./chatgpt_crawl.py
 
 ```
 
+## Benefits of Using `https://r.jina.ai` API
 
+Using the `https://r.jina.ai` API optimizes the retrieval process, enhancing scalability and reliability without the overhead of managing infrastructure.
+
+## Wrap-up
+
+This crawler combines modern async patterns with a robust API to streamline data collection, making it an efficient tool for scalable web scraping.
+```
+
+This trimmed version keeps it professional with less fluff and more industry-specific terminology, emphasizing efficiency and scalability.
