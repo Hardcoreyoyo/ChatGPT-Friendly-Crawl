@@ -24,30 +24,40 @@ async def fetch(session: aiohttp.ClientSession, url: str, headers: Optional[dict
 
 async def crawl_urls(session: aiohttp.ClientSession, start_url: str, domain: str, max_depth: int, max_urls: int) -> List[str]:
     print("Starting URL crawl...")
-    match_url = start_url
     to_visit: List[Tuple[str, int]] = [(start_url, 0)]
     visited: Set[str] = set()
     urls: List[str] = []
 
-    while to_visit:
+    while to_visit and len(urls) < max_urls:
         current_url, depth = to_visit.pop(0)
-        if depth > max_depth or len(urls) >= max_urls:
-            break
-        if current_url not in visited and match_url in current_url:
+        current_url_parsed = urlparse(current_url)
+
+        if current_url not in visited and current_url_parsed.netloc == domain:
             visited.add(current_url)
-            html = await fetch(session, current_url)
-            if html:
-                soup = BeautifulSoup(html, 'html.parser')
-                for link in soup.find_all('a', href=True):
-                    link_url = urljoin(current_url, link['href'])
-                    link_domain = urlparse(link_url).netloc
-                    if link_domain == domain and link_url not in visited and match_url in link_url:
-                        urls.append(link_url)
-                        if len(urls) < max_urls:
+            if depth <= max_depth:
+                html = await fetch(session, current_url)
+                if html:
+                    soup = BeautifulSoup(html, 'html.parser')
+                    for link in soup.find_all('a', href=True):
+                        if len(urls) >= max_urls:
+                            break  # Stop processing if we've reached the maximum number of URLs
+                        link_url = urljoin(current_url, link['href'])
+                        link_url_parsed = urlparse(link_url)
+                        # Check if the URL is directly under the start URL and is a new path
+                        if (link_url_parsed.netloc == domain and
+                            link_url_parsed.path.startswith(current_url_parsed.path) and
+                            link_url_parsed.path.strip("/").count("/") == current_url_parsed.path.strip("/").count("/") + 1 and
+                            link_url not in visited):
+                            urls.append(link_url)
                             to_visit.append((link_url, depth + 1))
+                            if len(urls) >= max_urls:
+                                break  # Stop adding new URLs if we've reached the maximum number
+
     print("Crawl completed. Collected URLs:")
     for url in urls:
         print(url)
+    print(f"Crawl completed. Collected {len(urls)} URLs.")
+
     return urls
 
 async def process_urls(session: aiohttp.ClientSession, urls: List[str], batch_size: int = 10) -> None:
