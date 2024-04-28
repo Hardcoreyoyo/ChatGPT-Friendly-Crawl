@@ -1,9 +1,61 @@
+import aiohttp
+from typing import List, Optional
 import os
 import asyncio
-import aiohttp
-from bs4 import BeautifulSoup
+from pyppeteer import launch
 from urllib.parse import urljoin, urlparse
-from typing import List, Tuple, Set, Optional
+from collections import deque
+
+async def is_within_path(base_url, url, depth):
+    # 解析URL，檢查是否在指定的深度和路徑內
+    base_parts = urlparse(base_url).path.strip('/').split('/')
+    url_parts = urlparse(url).path.strip('/').split('/')
+    if urlparse(base_url).netloc != urlparse(url).netloc:
+        return False
+    if url_parts[:len(base_parts)] != base_parts:
+        return False
+    return len(url_parts) <= len(base_parts) + depth
+
+async def crawl(start_url, depth, max_pages):
+    # 啟動瀏覽器和頁面
+    browser = await launch(headless=True, args=['--disable-gpu', '--no-sandbox'])
+    page = await browser.newPage()
+
+    visited = set()
+    queue = deque([(start_url, 0)])
+    urls_collected = []
+
+    try:
+        while queue and len(urls_collected) < max_pages:
+            current_url, current_depth = queue.popleft()
+            if current_url in visited or current_depth > depth:
+                print(f"Skipping {current_url} at depth {current_depth} (either visited or too deep)")
+                continue
+
+            print(f"Processing {current_url} at depth {current_depth}")
+            visited.add(current_url)
+            await page.goto(current_url)
+            await page.waitForSelector('a')
+
+            hrefs = await page.evaluate('''() => Array.from(document.querySelectorAll('a'), a => a.href)''')
+            for href in hrefs:
+                if href and await is_within_path(start_url, href, depth - current_depth):
+                    url = urljoin(current_url, href)
+                    if url not in visited:
+                        if current_depth < depth:
+                            queue.append((url, current_depth + 1))
+                        if url not in urls_collected:
+                            urls_collected.append(url)
+                            print(f"Added {url}")
+                            if len(urls_collected) >= max_pages:
+                                print("Reached maximum page limit")
+                                break
+
+    finally:
+        await browser.close()
+        print("Driver closed.")
+
+    return urls_collected
 
 async def fetch(session: aiohttp.ClientSession, url: str, headers: Optional[dict] = None, retries: int = 3, timeout: int = 10) -> Optional[str]:
     try:
@@ -21,44 +73,6 @@ async def fetch(session: aiohttp.ClientSession, url: str, headers: Optional[dict
     except Exception as e:
         print(f"Error retrieving {url}: {e}")
         return None
-
-async def crawl_urls(session: aiohttp.ClientSession, start_url: str, domain: str, max_depth: int, max_urls: int) -> List[str]:
-    print("Starting URL crawl...")
-    to_visit: List[Tuple[str, int]] = [(start_url, 0)]
-    visited: Set[str] = set()
-    urls: List[str] = []
-
-    while to_visit and len(urls) < max_urls:
-        current_url, depth = to_visit.pop(0)
-        current_url_parsed = urlparse(current_url)
-
-        if current_url not in visited and current_url_parsed.netloc == domain:
-            visited.add(current_url)
-            if depth <= max_depth:
-                html = await fetch(session, current_url)
-                if html:
-                    soup = BeautifulSoup(html, 'html.parser')
-                    for link in soup.find_all('a', href=True):
-                        if len(urls) >= max_urls:
-                            break  # Stop processing if we've reached the maximum number of URLs
-                        link_url = urljoin(current_url, link['href'])
-                        link_url_parsed = urlparse(link_url)
-                        # Check if the URL is directly under the start URL and is a new path
-                        if (link_url_parsed.netloc == domain and
-                            link_url_parsed.path.startswith(current_url_parsed.path) and
-                            link_url_parsed.path.strip("/").count("/") == current_url_parsed.path.strip("/").count("/") + 1 and
-                            link_url not in visited):
-                            urls.append(link_url)
-                            to_visit.append((link_url, depth + 1))
-                            if len(urls) >= max_urls:
-                                break  # Stop adding new URLs if we've reached the maximum number
-
-    print("Crawl completed. Collected URLs:")
-    for url in urls:
-        print(url)
-    print(f"Crawl completed. Collected {len(urls)} URLs.")
-
-    return urls
 
 async def process_urls(session: aiohttp.ClientSession, urls: List[str], batch_size: int = 10) -> None:
     print("Starting processing URLs...")
@@ -88,12 +102,15 @@ async def process_urls(session: aiohttp.ClientSession, urls: List[str], batch_si
 async def main() -> None:
     start_url: str = os.getenv('CHATGPT_CRAWL_VAR_START_URL', 'https://www.google.com')
     depth: int = int(os.getenv('CHATGPT_CRAWL_VAR_DEPTH', 1))
-    max_urls: int = int(os.getenv('CHATGPT_CRAWL_VAR_MAX_URLS', 50))
-
-    print(f"start_url: {start_url}, depth: {depth}, max_urls: {max_urls}")
+    max_pages = int(os.environ.get('CHATGPT_CRAWL_VAR_MAX_PAGES', 50))
 
     async with aiohttp.ClientSession() as session:
-        urls: List[str] = await crawl_urls(session, start_url, urlparse(start_url).netloc, depth, max_urls)
+        urls: List[str] = await crawl(start_url, depth, max_pages)
+
+        for url in urls:
+            print(url)
+        print(f"Crawl completed. Collected {len(urls)} URLs.")
+
         await process_urls(session, urls)
 
 if __name__ == '__main__':

@@ -13,8 +13,23 @@
 4.爬蟲不要獲取網站內容，只要獲取在特定路徑下按照指定的深度搜索，
 並且要嚴格過濾限制要以提供的爬蟲的網址，為基準，舉例 爬蟲網址設定為 https://www.google.com，不可去或獲取 https://github.com
 
+以我下方提供的爬蟲程式碼為基礎，修改為非同步執行，提高爬蟲效率，但是爬蟲深度，爬蟲網址總數限制，爬蟲網址規則 match 等等細節一定要保留完整。
+
+
+為了達到這些具體功能要求並保證程式碼能有效執行，下面我會修改之前的程式碼範例，
+
+以我下方提供的爬蟲程式碼為基礎，修改為非同步執行，提高爬蟲效率，但是一樣要符合之前所有功能條件:
+包括使用環境變數來設定爬蟲的啟動參數、嚴格遵守指定的爬蟲深度和頁面數限制，
+以及僅獲取符合特定路徑和深度的URLs。
+要能解決單頁應用（SPA, Single Page Applications）問題，
+因為它們的內容往往是透過 JavaScript 動態生成的。
+對於這類網站，使用像 requests 和 BeautifulSoup 這樣的庫可能無法有效地抓取到頁面上的所有連結，
+因為它們無法執行 JavaScript。
+
 
 
  start_url = os.environ.get('CHATGPT_CRAWL_VAR_START_URL', 'https://www.google.com')  # 預設值
     depth = int(os.environ.get('CHATGPT_CRAWL_VAR_DEPTH', 1))  # 預設值
     max_pages = int(os.environ.get('CHATGPT_CRAWL_VAR_MAX_PAGES', 50))  # 預設值
+
+/Users/ci-danos.huang/Library/Application Support/pyppeteer/local-chromium/1181205
