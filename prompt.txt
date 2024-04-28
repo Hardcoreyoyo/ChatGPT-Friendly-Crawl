@@ -1,0 +1,20 @@
+使用 python 11 建構爬蟲程式碼，必須實現功能細節如下:
+
+1.啟動程式時以要以環境參數的方式獲取要爬蟲的網址。
+
+2.啟動程式時以要以環境參數的方式獲取要爬蟲的深度參數。
+爬蟲深度是指網址的子路徑層級，舉例，爬蟲的網址為 https://www.google.com，
+深度為1時，只會獲取 https://www.google.com/test1，https://www.google.com/test2，https://www.google.com/* ....以此類推，
+不會獲取到更深的子路徑層級，像是 https://www.google.com/test2/test2。
+
+3.啟動程式時以要以環境參數的方式獲取要爬蟲網頁限制最大數量參數，只可以小於等於爬蟲網頁限制最大數量參數。
+不管深度或爬蟲獲取到的全部網址數量是多少，都不可以超過爬蟲網頁的最大數量參數。
+
+4.爬蟲不要獲取網站內容，只要獲取在特定路徑下按照指定的深度搜索，
+並且要嚴格過濾限制要以提供的爬蟲的網址，為基準，舉例 爬蟲網址設定為 https://www.google.com，不可去或獲取 https://github.com
+
+
+
+ start_url = os.environ.get('CHATGPT_CRAWL_VAR_START_URL', 'https://www.google.com')  # 預設值
+    depth = int(os.environ.get('CHATGPT_CRAWL_VAR_DEPTH', 1))  # 預設值
+    max_pages = int(os.environ.get('CHATGPT_CRAWL_VAR_MAX_PAGES', 50))  # 預設值
